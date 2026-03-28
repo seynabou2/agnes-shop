@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { pool } = require("../db/database");
 const authMiddleware = require("../middleware/auth");
-const { sendNewOrderNotification, sendRefundEmail, sendOrderStatusEmail } = require("../services/email");
+const { sendNewOrderNotification, sendRefundEmail, sendOrderStatusEmail, sendOrderConfirmationEmail } = require("../services/email");
 
 // POST /api/orders — passer une commande (public)
 router.post("/", async (req, res) => {
@@ -112,6 +112,11 @@ router.post("/", async (req, res) => {
 
     // Notification email à l'admin (non-bloquant)
     sendNewOrderNotification(result.rows[0]).catch(() => {});
+
+    // Email de confirmation au client (non-bloquant)
+    if (result.rows[0].customer_email) {
+      sendOrderConfirmationEmail(result.rows[0]).catch(() => {});
+    }
 
     res.status(201).json({ message: "Commande enregistrée !", order: result.rows[0] });
   } catch (err) {

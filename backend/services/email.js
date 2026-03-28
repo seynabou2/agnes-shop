@@ -10,6 +10,7 @@ function getResend() {
 // Expéditeur : domaine vérifié ou adresse Resend par défaut
 const FROM = process.env.EMAIL_FROM || "Agnès Shop <onboarding@resend.dev>";
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.EMAIL_USER || "nabousene2002@gmail.com";
+const ADMIN_URL = `${process.env.FRONTEND_URL || "https://seynabou2.github.io/agnes-shop"}/#/admin`;
 
 const PAYMENT_LABELS = {
   orange_money: "Orange Money",
@@ -78,7 +79,7 @@ async function sendNewOrderNotification(order) {
       ${order.payment_ref ? `<p style="font-size:13px;color:#6B7280;margin:0 0 12px;">Référence paiement : <strong>${order.payment_ref}</strong></p>` : ""}
       ${order.notes ? `<p style="font-size:13px;color:#6B7280;margin:0 0 12px;">Note client : <em>${order.notes}</em></p>` : ""}
 
-      <a href="${process.env.FRONTEND_URL || 'https://seynabou2.github.io/agnes-shop'}/#/admin"
+      <a href="${ADMIN_URL}"
         style="display:inline-block;background:#1E1B4B;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">
         Voir dans l'admin →
       </a>
@@ -337,4 +338,97 @@ async function sendContactNotification(msg) {
   }
 }
 
-module.exports = { sendNewOrderNotification, sendRefundEmail, sendContactNotification, sendOrderStatusEmail };
+/**
+ * Envoie un email de confirmation au client après sa commande.
+ */
+async function sendOrderConfirmationEmail(order) {
+  const resend = getResend();
+  const to = order.customer_email;
+  if (!resend || !to) return;
+
+  const items = typeof order.items === "string" ? JSON.parse(order.items) : order.items;
+
+  const itemsHtml = items.map((i) => `
+    <tr>
+      <td style="padding:6px 12px;border-bottom:1px solid #eee;">${i.name}</td>
+      <td style="padding:6px 12px;border-bottom:1px solid #eee;text-align:center;">×${i.quantity}</td>
+      <td style="padding:6px 12px;border-bottom:1px solid #eee;text-align:right;font-weight:700;">${(i.price * i.quantity).toLocaleString("fr-FR")} FCFA</td>
+    </tr>`).join("");
+
+  const paymentLabel = PAYMENT_LABELS[order.payment_method] || order.payment_method;
+
+  const html = `
+  <div style="font-family:Inter,sans-serif;max-width:560px;margin:auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #E5E7EB;">
+    <div style="background:linear-gradient(135deg,#1E1B4B,#6366F1);padding:24px 28px;color:white;">
+      <h2 style="margin:0;font-size:20px;">🌸 Merci pour votre commande !</h2>
+      <p style="margin:6px 0 0;opacity:0.85;font-size:14px;">Commande #${order.id} · Agnès Shop</p>
+    </div>
+    <div style="padding:24px 28px;">
+
+      <div style="background:#F0FDF4;border-left:4px solid #10B981;border-radius:0 10px 10px 0;padding:14px 18px;margin-bottom:24px;">
+        <p style="margin:0;font-size:15px;color:#065F46;">
+          ✅ <strong>Votre commande a bien été reçue !</strong><br/>
+          <span style="font-size:13px;">Nous allons la traiter dans les plus brefs délais et vous tiendrons informé(e) par email.</span>
+        </p>
+      </div>
+
+      <p style="font-size:15px;color:#374151;margin:0 0 20px;">
+        Bonjour <strong>${order.customer_name}</strong>, voici le récapitulatif de votre commande :
+      </p>
+
+      <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+        <thead>
+          <tr style="background:#F8F7FF;">
+            <th style="padding:8px 12px;text-align:left;font-size:13px;color:#6B7280;">Article</th>
+            <th style="padding:8px 12px;text-align:center;font-size:13px;color:#6B7280;">Qté</th>
+            <th style="padding:8px 12px;text-align:right;font-size:13px;color:#6B7280;">Prix</th>
+          </tr>
+        </thead>
+        <tbody>${itemsHtml}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2" style="padding:10px 12px;font-weight:800;font-size:15px;">TOTAL</td>
+            <td style="padding:10px 12px;font-weight:800;font-size:16px;color:#E11D48;text-align:right;">${order.total?.toLocaleString("fr-FR")} FCFA</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <div style="background:#F8F7FF;border-radius:10px;padding:16px 18px;margin-bottom:20px;">
+        <p style="margin:0 0 8px;font-weight:700;font-size:14px;color:#1E1B4B;">📋 Détails</p>
+        <p style="margin:0;font-size:14px;color:#374151;line-height:1.8;">
+          💳 Paiement : <strong>${paymentLabel}</strong><br/>
+          ${order.customer_address ? `📍 Livraison : <strong>${order.customer_address}</strong><br/>` : ""}
+          📞 Téléphone : <strong>${order.customer_phone}</strong>
+        </p>
+      </div>
+
+      <p style="font-size:13px;color:#6B7280;margin:0 0 20px;">
+        Vous recevrez un email à chaque étape de votre commande (confirmation, expédition, livraison).<br/>
+        Pour toute question, contactez-nous directement sur WhatsApp 👇
+      </p>
+
+      <a href="https://wa.me/${process.env.WHATSAPP_NUMBER || '33668557785'}"
+        style="display:inline-block;background:#25D366;color:white;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">
+        💬 Contacter Agnès Shop
+      </a>
+    </div>
+    <div style="background:#F3F4F6;padding:12px 28px;font-size:12px;color:#9CA3AF;text-align:center;">
+      Agnès Shop · Dakar, Sénégal · Merci de votre confiance 🙏
+    </div>
+  </div>`;
+
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM,
+      to,
+      subject: `✅ Commande #${order.id} reçue — ${order.total?.toLocaleString("fr-FR")} FCFA`,
+      html,
+    });
+    if (error) throw new Error(JSON.stringify(error));
+    console.log(`📧 Email confirmation commande envoyé à ${to}`);
+  } catch (err) {
+    console.error("❌ Erreur email confirmation :", err.message);
+  }
+}
+
+module.exports = { sendNewOrderNotification, sendRefundEmail, sendContactNotification, sendOrderStatusEmail, sendOrderConfirmationEmail };
