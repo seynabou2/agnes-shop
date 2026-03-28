@@ -4,13 +4,16 @@
     <meta charset="utf-8" />
     <title>Agnès Shop</title>
     <script>
-      // Redirige toutes les URLs vers index.html en passant le chemin en paramètre
-      // Technique standard pour React Router sur GitHub Pages
+      // Redirige vers index.html en conservant /agnes-shop comme base
+      // Technique standard pour React Router sur GitHub Pages (projet dans sous-dossier)
       var l = window.location;
+      var segmentsToKeep = 1; // "agnes-shop" = 1 segment à conserver
+      var pathParts = l.pathname.split("/");
+      var base = pathParts.slice(0, 1 + segmentsToKeep).join("/");
+      var rest = "/" + pathParts.slice(1 + segmentsToKeep).join("/");
       l.replace(
         l.protocol + "//" + l.hostname + (l.port ? ":" + l.port : "") +
-        l.pathname.split("/").slice(0, 1).join("/") +
-        "/?p=" + encodeURIComponent(l.pathname + l.search) +
+        base + "/?p=" + encodeURIComponent(rest + l.search) +
         l.hash
       );
     </script>
