@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/agnes-shop/static/css/main.ef7bb538.css",
+    "main.js": "/agnes-shop/static/js/main.fb8dc0de.js",
+    "index.html": "/agnes-shop/index.html",
+    "main.ef7bb538.css.map": "/agnes-shop/static/css/main.ef7bb538.css.map",
+    "main.fb8dc0de.js.map": "/agnes-shop/static/js/main.fb8dc0de.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.ef7bb538.css",
+    "static/js/main.fb8dc0de.js"
+  ]
+}
