@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Agnès Shop</title>
+    <script>
+      // Redirige toutes les URLs vers index.html en passant le chemin en paramètre
+      // Technique standard pour React Router sur GitHub Pages
+      var l = window.location;
+      l.replace(
+        l.protocol + "//" + l.hostname + (l.port ? ":" + l.port : "") +
+        l.pathname.split("/").slice(0, 1).join("/") +
+        "/?p=" + encodeURIComponent(l.pathname + l.search) +
+        l.hash
+      );
+    </script>
+  </head>
+  <body></body>
+</html>

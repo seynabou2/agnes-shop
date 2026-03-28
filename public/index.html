@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#1E1B4B" />
+    <meta name="description" content="Agnès Shop – Mode africaine authentique à Dakar. Robes en pagne, boubous, tops wax et bien plus. Commandez facilement via WhatsApp, Orange Money ou Wave." />
+    <meta name="keywords" content="mode africaine, pagne, boubou, wax, Dakar, Sénégal, boutique en ligne" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <!-- Google Fonts : Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+    <title>Agnès Shop – Mode Africaine à Dakar</title>
+    <!-- CinetPay Seamless SDK – paiement Orange Money, Carte bancaire, etc. -->
+    <script src="https://cdn.cinetpay.com/seamless/main.js"></script>
+  </head>
+  <body>
+    <noscript>Vous devez activer JavaScript pour utiliser ce site.</noscript>
+    <div id="root"></div>
+    <script>
+      // Restaure l'URL après redirection depuis 404.html (GitHub Pages)
+      (function() {
+        var p = window.location.search.slice(1).split("&")
+          .find(function(s) { return s.startsWith("p="); });
+        if (p) {
+          var path = decodeURIComponent(p.slice(2));
+          window.history.replaceState(null, null, path);
+        }
+      })();
+    </script>
+  </body>
+</html>
