@@ -1,22 +1,15 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 require("dotenv").config();
 
-// Crée le transporteur SMTP (Gmail — port 587 STARTTLS)
-function createTransporter() {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return null;
-  return nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false,          // STARTTLS (port 587, non bloqué sur Render)
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false,
-    },
-  });
+// Crée le client Resend
+function getResend() {
+  if (!process.env.RESEND_API_KEY) return null;
+  return new Resend(process.env.RESEND_API_KEY);
 }
+
+// Expéditeur : domaine vérifié ou adresse Resend par défaut
+const FROM = process.env.EMAIL_FROM || "Agnès Shop <onboarding@resend.dev>";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.EMAIL_USER || "nabousene2002@gmail.com";
 
 const PAYMENT_LABELS = {
   orange_money: "Orange Money",
@@ -30,13 +23,12 @@ const PAYMENT_LABELS = {
  * Notifie l'admin par email à chaque nouvelle commande.
  */
 async function sendNewOrderNotification(order) {
-  const transporter = createTransporter();
-  if (!transporter) {
-    console.log("📧 Email non configuré — notification ignorée.");
+  const resend = getResend();
+  if (!resend) {
+    console.log("📧 Resend non configuré (RESEND_API_KEY manquant).");
     return;
   }
 
-  const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
   const items = typeof order.items === "string" ? JSON.parse(order.items) : order.items;
 
   const itemsHtml = items
@@ -86,7 +78,8 @@ async function sendNewOrderNotification(order) {
       ${order.payment_ref ? `<p style="font-size:13px;color:#6B7280;margin:0 0 12px;">Référence paiement : <strong>${order.payment_ref}</strong></p>` : ""}
       ${order.notes ? `<p style="font-size:13px;color:#6B7280;margin:0 0 12px;">Note client : <em>${order.notes}</em></p>` : ""}
 
-      <a href="${process.env.FRONTEND_URL || 'http://localhost:3001'}/admin" style="display:inline-block;background:#1E1B4B;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">
+      <a href="${process.env.FRONTEND_URL || 'https://seynabou2.github.io/agnes-shop'}/#/admin"
+        style="display:inline-block;background:#1E1B4B;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">
         Voir dans l'admin →
       </a>
     </div>
@@ -96,15 +89,16 @@ async function sendNewOrderNotification(order) {
   </div>`;
 
   try {
-    await transporter.sendMail({
-      from: `"Agnès Shop 🛍️" <${process.env.EMAIL_USER}>`,
-      to: adminEmail,
+    const { error } = await resend.emails.send({
+      from: FROM,
+      to: ADMIN_EMAIL,
       subject: `🛍️ Nouvelle commande #${order.id} — ${order.customer_name} (${order.total?.toLocaleString("fr-FR")} FCFA)`,
       html,
     });
-    console.log(`📧 Email envoyé à ${adminEmail} pour commande #${order.id}`);
+    if (error) throw new Error(JSON.stringify(error));
+    console.log(`📧 Email nouvelle commande envoyé à ${ADMIN_EMAIL}`);
   } catch (err) {
-    console.error("❌ Erreur envoi email :", err.message);
+    console.error("❌ Erreur envoi email commande :", err.message);
   }
 }
 
@@ -112,10 +106,10 @@ async function sendNewOrderNotification(order) {
  * Envoie un email de remboursement au client.
  */
 async function sendRefundEmail(order, { reason, refundMethod, refundNumber, customerEmail }) {
-  const transporter = createTransporter();
+  const resend = getResend();
   const to = customerEmail || order.customer_email;
-  if (!transporter || !to) {
-    console.log("📧 Email remboursement non envoyé (pas de config ou pas d'email client).");
+  if (!resend || !to) {
+    console.log("📧 Email remboursement ignoré (pas de config ou pas d'email client).");
     return;
   }
 
@@ -136,7 +130,7 @@ async function sendRefundEmail(order, { reason, refundMethod, refundNumber, cust
     <div style="padding:24px 28px;">
       <p style="color:#374151;font-size:15px;margin:0 0 18px;">
         Bonjour <strong>${order.customer_name}</strong>,<br><br>
-        Nous sommes désolés de vous informer que votre commande <strong>#${order.id}</strong> a dû être annulée.
+        Votre commande <strong>#${order.id}</strong> a été annulée.
         ${reason ? `<br><br><strong>Raison :</strong> ${reason}` : ""}
       </p>
 
@@ -151,7 +145,7 @@ async function sendRefundEmail(order, { reason, refundMethod, refundNumber, cust
         <tbody>${itemsHtml}</tbody>
         <tfoot>
           <tr>
-            <td colspan="2" style="padding:10px;font-weight:800;font-size:15px;color:#DC2626;">Montant à rembourser</td>
+            <td colspan="2" style="padding:10px;font-weight:800;font-size:15px;color:#DC2626;">Montant remboursé</td>
             <td style="padding:10px;font-weight:800;font-size:17px;color:#DC2626;text-align:right;">${order.total?.toLocaleString("fr-FR")} FCFA</td>
           </tr>
         </tfoot>
@@ -160,18 +154,13 @@ async function sendRefundEmail(order, { reason, refundMethod, refundNumber, cust
       <div style="background:#FFF3CD;border:2px solid #F59E0B;border-radius:12px;padding:18px 20px;margin-bottom:20px;">
         <p style="margin:0 0 10px;font-weight:800;font-size:15px;color:#92400E;">💰 Modalités de remboursement</p>
         ${refundMethod ? `<p style="margin:0 0 6px;font-size:14px;color:#78350F;">Mode : <strong>${refundMethod}</strong></p>` : ""}
-        ${refundNumber ? `<p style="margin:0 0 6px;font-size:14px;color:#78350F;">Numéro de remboursement : <strong>${refundNumber}</strong></p>` : ""}
+        ${refundNumber ? `<p style="margin:0 0 6px;font-size:14px;color:#78350F;">Numéro : <strong>${refundNumber}</strong></p>` : ""}
         <p style="margin:8px 0 0;font-size:13px;color:#92400E;">
-          ⏱️ Le remboursement sera effectué dans les <strong>24 à 48 heures</strong>.<br>
-          Si vous n'avez pas reçu votre remboursement passé ce délai, contactez-nous sur WhatsApp.
+          ⏱️ Remboursement effectué dans les <strong>24 à 48 heures</strong>.
         </p>
       </div>
 
-      <p style="font-size:13px;color:#6B7280;margin:0 0 18px;">
-        Nous nous excusons pour la gêne occasionnée et espérons vous revoir prochainement sur Agnès Shop 🙏
-      </p>
-
-      <a href="https://wa.me/${process.env.WHATSAPP_NUMBER || '33668557785'}?text=${encodeURIComponent(`Bonjour Agnès Shop, je souhaite des nouvelles de mon remboursement pour la commande #${order.id}`)}"
+      <a href="https://wa.me/${process.env.WHATSAPP_NUMBER || '33668557785'}"
         style="display:inline-block;background:#25D366;color:white;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">
         💬 Contacter Agnès Shop
       </a>
@@ -182,15 +171,16 @@ async function sendRefundEmail(order, { reason, refundMethod, refundNumber, cust
   </div>`;
 
   try {
-    await transporter.sendMail({
-      from: `"Agnès Shop 🛍️" <${process.env.EMAIL_USER}>`,
+    const { error } = await resend.emails.send({
+      from: FROM,
       to,
       subject: `💸 Remboursement commande #${order.id} — ${order.total?.toLocaleString("fr-FR")} FCFA`,
       html,
     });
-    console.log(`📧 Email remboursement envoyé à ${to} pour commande #${order.id}`);
+    if (error) throw new Error(JSON.stringify(error));
+    console.log(`📧 Email remboursement envoyé à ${to}`);
   } catch (err) {
-    console.error("❌ Erreur envoi email remboursement :", err.message);
+    console.error("❌ Erreur email remboursement :", err.message);
   }
 }
 
@@ -198,9 +188,9 @@ async function sendRefundEmail(order, { reason, refundMethod, refundNumber, cust
  * Notifie le client quand le statut de sa commande change.
  */
 async function sendOrderStatusEmail(order) {
-  const transporter = createTransporter();
+  const resend = getResend();
   const to = order.customer_email;
-  if (!transporter || !to) return;
+  if (!resend || !to) return;
 
   const STATUS_INFO = {
     "confirmée":  { icon: "✅", color: "#10B981", bg: "#F0FDF4", label: "Commande confirmée",  msg: "Votre commande a bien été confirmée. Nous préparons vos articles avec soin." },
@@ -254,23 +244,24 @@ async function sendOrderStatusEmail(order) {
         </tfoot>
       </table>
 
-      <a href="https://wa.me/${process.env.WHATSAPP_NUMBER || '33668557785'}?text=${encodeURIComponent(`Bonjour Agnès Shop, je souhaite des informations sur ma commande #${order.id}`)}"
+      <a href="https://wa.me/${process.env.WHATSAPP_NUMBER || '33668557785'}"
         style="display:inline-block;background:#25D366;color:white;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">
         💬 Contacter Agnès Shop
       </a>
     </div>
     <div style="background:#F3F4F6;padding:12px 28px;font-size:12px;color:#9CA3AF;text-align:center;">
-      Agnès Shop · Dakar, Sénégal · nabousene2002@gmail.com
+      Agnès Shop · Dakar, Sénégal
     </div>
   </div>`;
 
   try {
-    await transporter.sendMail({
-      from: `"Agnès Shop 🌸" <${process.env.EMAIL_USER}>`,
+    const { error } = await resend.emails.send({
+      from: FROM,
       to,
       subject: `${info.icon} Commande #${order.id} — ${info.label}`,
       html,
     });
+    if (error) throw new Error(JSON.stringify(error));
     console.log(`📧 Email statut "${order.status}" envoyé à ${to}`);
   } catch (err) {
     console.error("❌ Erreur email statut :", err.message);
@@ -281,10 +272,9 @@ async function sendOrderStatusEmail(order) {
  * Notifie l'admin quand un client envoie un message via le formulaire de contact.
  */
 async function sendContactNotification(msg) {
-  const transporter = createTransporter();
-  if (!transporter) return;
+  const resend = getResend();
+  if (!resend) return;
 
-  const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
   const subjectLabels = {
     commande: "Question sur une commande",
     mesure: "Commande sur mesure",
@@ -322,14 +312,10 @@ async function sendContactNotification(msg) {
         style="display:inline-block;background:#1E1B4B;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;margin-right:10px;">
         ✉️ Répondre par email
       </a>
-      ${msg.phone ? `<a href="https://wa.me/${msg.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Bonjour ${msg.name}, merci pour votre message. `)}
-        " style="display:inline-block;background:#25D366;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">
+      ${msg.phone ? `<a href="https://wa.me/${msg.phone.replace(/[^0-9]/g, '')}"
+        style="display:inline-block;background:#25D366;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">
         💬 WhatsApp
       </a>` : ""}
-
-      <p style="margin:16px 0 0;font-size:12px;color:#9CA3AF;">
-        Voir tous les messages : <a href="${process.env.FRONTEND_URL || 'http://localhost:3001'}/admin" style="color:#6366F1;">Admin Agnès Shop</a>
-      </p>
     </div>
     <div style="background:#F3F4F6;padding:12px 28px;font-size:12px;color:#9CA3AF;text-align:center;">
       Agnès Shop · formulaire de contact
@@ -337,13 +323,14 @@ async function sendContactNotification(msg) {
   </div>`;
 
   try {
-    await transporter.sendMail({
-      from: `"Agnès Shop 🛍️" <${process.env.EMAIL_USER}>`,
-      to: adminEmail,
+    const { error } = await resend.emails.send({
+      from: FROM,
+      to: ADMIN_EMAIL,
       replyTo: msg.email,
       subject: `💬 Nouveau message : ${msg.name} — ${subjectLabel}`,
       html,
     });
+    if (error) throw new Error(JSON.stringify(error));
     console.log(`📧 Notif contact envoyée pour message de ${msg.name}`);
   } catch (err) {
     console.error("❌ Erreur email contact :", err.message);
