@@ -1,14 +1,19 @@
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 
-// Crée le transporteur SMTP (Gmail par défaut)
+// Crée le transporteur SMTP (Gmail — port 587 STARTTLS)
 function createTransporter() {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return null;
   return nodemailer.createTransport({
-    service: process.env.EMAIL_SERVICE || "gmail",
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,          // STARTTLS (port 587, non bloqué sur Render)
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false,
     },
   });
 }

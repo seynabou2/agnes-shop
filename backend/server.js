@@ -21,6 +21,11 @@ const app = express();
 const httpServer = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 
+// ── Trust proxy (requis sur Render / Heroku / Railway) ────────
+// Nécessaire pour que express-rate-limit fonctionne correctement
+// derrière le reverse proxy de la plateforme.
+app.set("trust proxy", 1);
+
 // ── CORS ─────────────────────────────────────────────────────
 const allowedOrigins = [
   "http://localhost:3000",
