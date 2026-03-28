@@ -15,7 +15,7 @@
     "socket.io-client": "^4.8.3",
     "web-vitals": "^2.1.4"
   },
-  "homepage": ".",
+  "homepage": "https://seynabou2.github.io/agnes-shop",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
@@ -41,5 +41,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "gh-pages": "^6.3.0"
   }
 }

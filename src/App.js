@@ -39,7 +39,7 @@ function AppInner() {
 
 function App() {
   return (
-    <Router>
+    <Router basename={process.env.PUBLIC_URL}>
       <AppInner />
     </Router>
   );

@@ -375,7 +375,7 @@ function Products({ products, reload }) {
                     <tr key={p.id} style={{ opacity: p.is_available === false ? 0.55 : 1 }}>
                       <td>
                         <img
-                          src={p.image?.startsWith("/uploads") ? `${process.env.REACT_APP_API_URL || "http://localhost:5000"}${p.image}` : p.image}
+                          src={p.image?.startsWith("/uploads") ? `${process.env.REACT_APP_API_URL || "http://localhost:5000"}${p.image}` : p.image?.startsWith("/") ? `${process.env.PUBLIC_URL}${p.image}` : p.image}
                           alt={p.name}
                           style={{ width: "44px", height: "44px", objectFit: "cover", borderRadius: "6px", background: "#F3F4F6" }}
                           onError={(e) => { e.target.src = "https://placehold.co/44x44/E8E6FF/1E1B4B?text=?"; }}

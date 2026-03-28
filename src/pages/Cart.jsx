@@ -369,7 +369,7 @@ function Cart() {
                     padding: "0.9rem 0", borderBottom: "1px solid #F3F4F6",
                   }}>
                     <img
-                      src={item.image?.startsWith("/uploads") ? `${process.env.REACT_APP_API_URL || "http://localhost:5000"}${item.image}` : item.image}
+                      src={item.image?.startsWith("/uploads") ? `${process.env.REACT_APP_API_URL || "http://localhost:5000"}${item.image}` : item.image?.startsWith("/") ? `${process.env.PUBLIC_URL}${item.image}` : item.image}
                       alt={item.name}
                       style={{ width: "56px", height: "56px", objectFit: "cover", borderRadius: "8px", background: "#F3F4F6" }}
                       onError={(e) => { e.target.src = "https://placehold.co/56x56/E8E6FF/1E1B4B?text=?"; }}

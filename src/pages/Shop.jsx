@@ -164,7 +164,7 @@ function Shop() {
                 <div key={product.id} className="product-card" style={{ opacity: unavailable ? 0.72 : 1 }}>
                   <div className="product-image-wrap">
                     <img
-                      src={product.image?.startsWith("/uploads") ? `${process.env.REACT_APP_API_URL || "http://localhost:5000"}${product.image}` : product.image}
+                      src={product.image?.startsWith("/uploads") ? `${process.env.REACT_APP_API_URL || "http://localhost:5000"}${product.image}` : product.image?.startsWith("/") ? `${process.env.PUBLIC_URL}${product.image}` : product.image}
                       alt={product.name}
                       className="product-image"
                       onError={(e) => { e.target.src = "https://placehold.co/300x260/E8E6FF/1E1B4B?text=Photo"; }}
