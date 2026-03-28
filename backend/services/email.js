@@ -190,6 +190,89 @@ async function sendRefundEmail(order, { reason, refundMethod, refundNumber, cust
 }
 
 /**
+ * Notifie le client quand le statut de sa commande change.
+ */
+async function sendOrderStatusEmail(order) {
+  const transporter = createTransporter();
+  const to = order.customer_email;
+  if (!transporter || !to) return;
+
+  const STATUS_INFO = {
+    "confirmée":  { icon: "✅", color: "#10B981", bg: "#F0FDF4", label: "Commande confirmée",  msg: "Votre commande a bien été confirmée. Nous préparons vos articles avec soin." },
+    "expédiée":   { icon: "🚚", color: "#6366F1", bg: "#EEF2FF", label: "Commande expédiée",   msg: "Vos articles sont en route ! Vous serez livré très prochainement." },
+    "livrée":     { icon: "🎉", color: "#D4A017", bg: "#FFFBEB", label: "Commande livrée",     msg: "Votre commande a été livrée. Merci de votre confiance chez Agnès Shop !" },
+    "annulée":    { icon: "❌", color: "#EF4444", bg: "#FFF1F2", label: "Commande annulée",    msg: "Votre commande a été annulée. Contactez-nous pour plus d'informations." },
+    "en attente": { icon: "⏳", color: "#F59E0B", bg: "#FFFBEB", label: "En attente",          msg: "Votre commande est en attente de traitement. Nous vous contacterons rapidement." },
+  };
+
+  const info = STATUS_INFO[order.status] || { icon: "📦", color: "#6366F1", bg: "#EEF2FF", label: order.status, msg: "Le statut de votre commande a été mis à jour." };
+  const items = typeof order.items === "string" ? JSON.parse(order.items) : order.items;
+
+  const itemsHtml = items.map((i) => `
+    <tr>
+      <td style="padding:6px 12px;border-bottom:1px solid #eee;">${i.name}</td>
+      <td style="padding:6px 12px;border-bottom:1px solid #eee;text-align:center;">×${i.quantity}</td>
+      <td style="padding:6px 12px;border-bottom:1px solid #eee;text-align:right;font-weight:700;">${(i.price * i.quantity).toLocaleString("fr-FR")} FCFA</td>
+    </tr>`).join("");
+
+  const html = `
+  <div style="font-family:Inter,sans-serif;max-width:560px;margin:auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #E5E7EB;">
+    <div style="background:linear-gradient(135deg,#1E1B4B,#6366F1);padding:24px 28px;color:white;">
+      <h2 style="margin:0;font-size:20px;">🌸 Agnès Shop — Suivi de commande</h2>
+      <p style="margin:6px 0 0;opacity:0.85;font-size:14px;">Commande #${order.id}</p>
+    </div>
+    <div style="padding:24px 28px;">
+      <div style="background:${info.bg};border-left:4px solid ${info.color};border-radius:0 10px 10px 0;padding:16px 20px;margin-bottom:24px;">
+        <p style="margin:0;font-size:22px;">${info.icon} <strong style="color:${info.color};">${info.label}</strong></p>
+        <p style="margin:8px 0 0;font-size:14px;color:#374151;">${info.msg}</p>
+      </div>
+
+      <p style="font-size:15px;color:#374151;margin:0 0 20px;">
+        Bonjour <strong>${order.customer_name}</strong>,<br/>
+        voici le récapitulatif de votre commande :
+      </p>
+
+      <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+        <thead>
+          <tr style="background:#F8F7FF;">
+            <th style="padding:8px 12px;text-align:left;font-size:13px;color:#6B7280;">Article</th>
+            <th style="padding:8px 12px;text-align:center;font-size:13px;color:#6B7280;">Qté</th>
+            <th style="padding:8px 12px;text-align:right;font-size:13px;color:#6B7280;">Prix</th>
+          </tr>
+        </thead>
+        <tbody>${itemsHtml}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2" style="padding:10px 12px;font-weight:800;font-size:15px;">TOTAL</td>
+            <td style="padding:10px 12px;font-weight:800;font-size:16px;color:#E11D48;text-align:right;">${order.total?.toLocaleString("fr-FR")} FCFA</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <a href="https://wa.me/${process.env.WHATSAPP_NUMBER || '33668557785'}?text=${encodeURIComponent(`Bonjour Agnès Shop, je souhaite des informations sur ma commande #${order.id}`)}"
+        style="display:inline-block;background:#25D366;color:white;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">
+        💬 Contacter Agnès Shop
+      </a>
+    </div>
+    <div style="background:#F3F4F6;padding:12px 28px;font-size:12px;color:#9CA3AF;text-align:center;">
+      Agnès Shop · Dakar, Sénégal · nabousene2002@gmail.com
+    </div>
+  </div>`;
+
+  try {
+    await transporter.sendMail({
+      from: `"Agnès Shop 🌸" <${process.env.EMAIL_USER}>`,
+      to,
+      subject: `${info.icon} Commande #${order.id} — ${info.label}`,
+      html,
+    });
+    console.log(`📧 Email statut "${order.status}" envoyé à ${to}`);
+  } catch (err) {
+    console.error("❌ Erreur email statut :", err.message);
+  }
+}
+
+/**
  * Notifie l'admin quand un client envoie un message via le formulaire de contact.
  */
 async function sendContactNotification(msg) {
@@ -262,4 +345,4 @@ async function sendContactNotification(msg) {
   }
 }
 
-module.exports = { sendNewOrderNotification, sendRefundEmail, sendContactNotification };
+module.exports = { sendNewOrderNotification, sendRefundEmail, sendContactNotification, sendOrderStatusEmail };

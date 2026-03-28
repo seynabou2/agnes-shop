@@ -65,6 +65,7 @@ function Cart() {
   const [name, setName] = useState(customer?.first_name ? `${customer.first_name} ${customer.last_name || ""}`.trim() : "");
   const [phone, setPhone] = useState(customer?.phone || "");
   const [address, setAddress] = useState(customer?.address || "");
+  const [email, setEmail] = useState(customer?.email || "");
   const [paymentMethod, setPaymentMethod] = useState("orange_money");
   const [paymentRef, setPaymentRef] = useState("");
   const [loading, setLoading] = useState(false);
@@ -110,6 +111,7 @@ function Cart() {
       customer_name: name,
       customer_phone: phone,
       customer_address: address,
+      customer_email: email || customer?.email || null,
       items: cart.map((i) => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
       payment_method: paymentMethod,
       payment_ref: paymentRef || null,
@@ -436,6 +438,12 @@ function Cart() {
                     <label className="form-label">Adresse de livraison</label>
                     <input className="form-input" placeholder="Quartier, rue, repère..." value={address} onChange={(e) => setAddress(e.target.value)} />
                   </div>
+                  {!customer && (
+                    <div className="form-group">
+                      <label className="form-label">Email <span style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>(pour recevoir le suivi de commande)</span></label>
+                      <input className="form-input" type="email" placeholder="votre@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                    </div>
+                  )}
                   {settings.delivery_info && (
                     <div className="alert alert-info" style={{ fontSize: "0.84rem" }}>
                       📦 {settings.delivery_info}

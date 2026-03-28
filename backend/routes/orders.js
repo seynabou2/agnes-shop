@@ -2,14 +2,14 @@ const express = require("express");
 const router = express.Router();
 const { pool } = require("../db/database");
 const authMiddleware = require("../middleware/auth");
-const { sendNewOrderNotification, sendRefundEmail } = require("../services/email");
+const { sendNewOrderNotification, sendRefundEmail, sendOrderStatusEmail } = require("../services/email");
 
 // POST /api/orders — passer une commande (public)
 router.post("/", async (req, res) => {
   try {
     const {
       customer_id, customer_name, customer_phone, customer_address,
-      items, payment_method, payment_ref, notes, transaction_id,
+      customer_email, items, payment_method, payment_ref, notes, transaction_id,
     } = req.body;
 
     const cleanName = (customer_name || "").trim();
@@ -70,16 +70,26 @@ router.post("/", async (req, res) => {
       : method === "whatsapp" ? "à la livraison"
       : "en attente paiement"; // OM, Wave, Carte → paiement non encore confirmé
 
+    // Récupérer l'email du client connecté si disponible
+    let resolvedEmail = customer_email || null;
+    if (!resolvedEmail && validCustomerId) {
+      try {
+        const emailRes = await pool.query("SELECT email FROM customers WHERE id = $1", [validCustomerId]);
+        if (emailRes.rows.length) resolvedEmail = emailRes.rows[0].email;
+      } catch (_) {}
+    }
+
     const result = await pool.query(
       `INSERT INTO orders
-         (customer_id, customer_name, customer_phone, customer_address, items, total,
+         (customer_id, customer_name, customer_phone, customer_address, customer_email, items, total,
           payment_method, payment_ref, transaction_id, payment_status, status, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
       [
         validCustomerId,
         cleanName,
         cleanPhone,
         (customer_address || "").trim(),
+        resolvedEmail,
         JSON.stringify(items),
         total,
         method,
@@ -207,7 +217,14 @@ router.patch("/:id/status", authMiddleware, async (req, res) => {
       [status || null, payment_status || null, req.params.id]
     );
     if (!result.rows.length) return res.status(404).json({ error: "Commande introuvable." });
-    res.json(result.rows[0]);
+
+    const updatedOrder = result.rows[0];
+    // Email au client si le statut a changé et qu'on a son email
+    if (status && updatedOrder.customer_email) {
+      sendOrderStatusEmail(updatedOrder).catch(() => {});
+    }
+
+    res.json(updatedOrder);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
