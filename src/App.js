@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { HashRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Shop from "./pages/Shop";
 import Cart from "./pages/Cart";
@@ -39,7 +39,7 @@ function AppInner() {
 
 function App() {
   return (
-    <Router basename="/agnes-shop">
+    <Router>
       <AppInner />
     </Router>
   );
