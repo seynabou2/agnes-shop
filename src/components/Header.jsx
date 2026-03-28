@@ -10,35 +10,36 @@ function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isActive = (path) => location.pathname === path;
+  const close = () => setMenuOpen(false);
 
   return (
     <header className="navbar">
       <div className="nav-inner">
         {/* Logo */}
-        <Link to="/" className="nav-logo">
+        <Link to="/" className="nav-logo" onClick={close}>
           🌸 Agnès<span>Shop</span>
         </Link>
 
-        {/* Liens navigation */}
-        <nav className="nav-links">
-          <Link to="/" className={`nav-link ${isActive("/") ? "active" : ""}`}>
+        {/* Liens navigation — desktop */}
+        <nav className={`nav-links ${menuOpen ? "nav-links--open" : ""}`}>
+          <Link to="/" className={`nav-link ${isActive("/") ? "active" : ""}`} onClick={close}>
             Accueil
           </Link>
-          <Link to="/boutique" className={`nav-link ${isActive("/boutique") ? "active" : ""}`}>
+          <Link to="/boutique" className={`nav-link ${isActive("/boutique") ? "active" : ""}`} onClick={close}>
             Boutique
           </Link>
-          <Link to="/contact" className={`nav-link ${isActive("/contact") ? "active" : ""}`}>
+          <Link to="/contact" className={`nav-link ${isActive("/contact") ? "active" : ""}`} onClick={close}>
             Contact
           </Link>
 
           {/* Compte client */}
           {customer ? (
             <>
-              <Link to="/mon-compte" className={`nav-link ${isActive("/mon-compte") ? "active" : ""}`}>
+              <Link to="/mon-compte" className={`nav-link ${isActive("/mon-compte") ? "active" : ""}`} onClick={close}>
                 👤 {customer.first_name}
               </Link>
               <button
-                onClick={logout}
+                onClick={() => { logout(); close(); }}
                 className="nav-link"
                 style={{ background: "none", border: "none", cursor: "pointer" }}
               >
@@ -46,19 +47,38 @@ function Header() {
               </button>
             </>
           ) : (
-            <Link to="/connexion" className={`nav-link ${isActive("/connexion") ? "active" : ""}`}>
+            <Link to="/connexion" className={`nav-link ${isActive("/connexion") ? "active" : ""}`} onClick={close}>
               Connexion
             </Link>
           )}
 
           {/* Panier */}
-          <Link to="/panier" className="nav-cart-btn" style={{ marginLeft: "0.5rem" }}>
+          <Link to="/panier" className="nav-cart-btn" style={{ marginLeft: "0.5rem" }} onClick={close}>
             🛒 Panier
             {totalItems > 0 && (
               <span className="cart-badge">{totalItems}</span>
             )}
           </Link>
         </nav>
+
+        {/* Boutons droite sur mobile : panier + hamburger */}
+        <div className="nav-mobile-right">
+          <Link to="/panier" className="nav-cart-btn nav-cart-mobile" onClick={close}>
+            🛒
+            {totalItems > 0 && (
+              <span className="cart-badge">{totalItems}</span>
+            )}
+          </Link>
+          <button
+            className="nav-hamburger"
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label="Menu"
+          >
+            <span className={`hamburger-line ${menuOpen ? "open" : ""}`} />
+            <span className={`hamburger-line ${menuOpen ? "open" : ""}`} />
+            <span className={`hamburger-line ${menuOpen ? "open" : ""}`} />
+          </button>
+        </div>
       </div>
     </header>
   );

@@ -52,7 +52,7 @@ function Contact() {
           </p>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: "2rem", alignItems: "start" }}>
+        <div className="contact-layout">
 
           {/* ── Colonne gauche : infos de contact ── */}
           <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
@@ -178,7 +178,7 @@ function Contact() {
                   Envoyer un message
                 </h2>
                 <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                  <div className="contact-form-row">
                     <div>
                       <label className="form-label">Votre nom *</label>
                       <input

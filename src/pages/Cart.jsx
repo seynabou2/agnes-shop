@@ -356,7 +356,7 @@ function Cart() {
           ))}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "1.5rem", alignItems: "start" }}>
+        <div className="cart-layout">
           {/* Colonne principale */}
           <div>
             {/* ─ ÉTAPE 1 : Récap ─ */}
