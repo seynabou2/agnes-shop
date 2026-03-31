@@ -848,6 +848,23 @@ td strong { color: var(--text); }
 .empty-title { font-size: 1.1rem; color: var(--text); margin-bottom: 0.5rem; }
 .empty-desc { font-size: 0.88rem; color: var(--text-muted); }
 
+/* ── Product modal ─────────────────────────────────────────── */
+.product-modal-inner {
+  position: relative;
+}
+
+@media (max-width: 600px) {
+  .product-modal-inner {
+    grid-template-columns: 1fr !important;
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 95vh;
+  }
+  .product-modal-inner > div:first-child {
+    min-height: 240px !important;
+    border-radius: 20px 20px 0 0 !important;
+  }
+}
+
 /* ── Page-specific responsive layouts ─────────────────────── */
 .cart-layout {
   display: grid;

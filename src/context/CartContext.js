@@ -6,11 +6,21 @@ export function useCart() {
   return useContext(CartContext);
 }
 
+// Génère une clé unique par variante (produit + couleur + taille)
+function makeCartKey(product) {
+  return `${product.id}__${product.selectedColor || ""}__${product.selectedSize || ""}`;
+}
+
 export function CartProvider({ children }) {
   const [cart, setCart] = useState(() => {
     try {
       const saved = localStorage.getItem("agnes_cart");
-      return saved ? JSON.parse(saved) : [];
+      const parsed = saved ? JSON.parse(saved) : [];
+      // Migration : s'assurer que tous les items ont un cartKey
+      return parsed.map((item) => ({
+        ...item,
+        cartKey: item.cartKey || makeCartKey(item),
+      }));
     } catch {
       return [];
     }
@@ -20,27 +30,28 @@ export function CartProvider({ children }) {
     localStorage.setItem("agnes_cart", JSON.stringify(cart));
   }, [cart]);
 
-  // Ajouter au panier (avec gestion des quantités)
+  // Ajouter au panier (avec gestion des variantes par cartKey)
   function addToCart(product) {
+    const cartKey = makeCartKey(product);
     setCart((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
+      const existing = prev.find((item) => item.cartKey === cartKey);
       if (existing) {
         return prev.map((item) =>
-          item.id === product.id
+          item.cartKey === cartKey
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [...prev, { ...product, cartKey, quantity: 1 }];
     });
   }
 
-  // Retirer une unité (ou supprimer si qty = 1)
-  function removeFromCart(productId) {
+  // Retirer une unité (ou supprimer si qty = 1) — par cartKey
+  function removeFromCart(cartKey) {
     setCart((prev) =>
       prev
         .map((item) =>
-          item.id === productId
+          item.cartKey === cartKey
             ? { ...item, quantity: item.quantity - 1 }
             : item
         )
@@ -48,9 +59,9 @@ export function CartProvider({ children }) {
     );
   }
 
-  // Supprimer l'article complètement
-  function deleteFromCart(productId) {
-    setCart((prev) => prev.filter((item) => item.id !== productId));
+  // Supprimer l'article complètement — par cartKey
+  function deleteFromCart(cartKey) {
+    setCart((prev) => prev.filter((item) => item.cartKey !== cartKey));
   }
 
   // Vider le panier
@@ -64,6 +75,13 @@ export function CartProvider({ children }) {
   // Total en FCFA
   const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
+  // Quantité totale d'un produit (toutes variantes confondues)
+  function getProductQty(productId) {
+    return cart
+      .filter((item) => item.id === productId)
+      .reduce((sum, item) => sum + item.quantity, 0);
+  }
+
   return (
     <CartContext.Provider
       value={{
@@ -74,6 +92,7 @@ export function CartProvider({ children }) {
         clearCart,
         totalItems,
         totalPrice,
+        getProductQty,
       }}
     >
       {children}

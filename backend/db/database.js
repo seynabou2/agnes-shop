@@ -83,12 +83,14 @@ async function initDB() {
       );
     `);
 
-    // ── Colonnes promotion / disponibilité / nouveauté ────────
+    // ── Colonnes promotion / disponibilité / nouveauté / variantes ──
     const productMigrations = [
       `ALTER TABLE products ADD COLUMN IF NOT EXISTS is_available BOOLEAN DEFAULT true`,
       `ALTER TABLE products ADD COLUMN IF NOT EXISTS in_promotion BOOLEAN DEFAULT false`,
       `ALTER TABLE products ADD COLUMN IF NOT EXISTS discount_percent INTEGER DEFAULT 0`,
       `ALTER TABLE products ADD COLUMN IF NOT EXISTS is_new BOOLEAN DEFAULT false`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS colors JSONB DEFAULT '[]'`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS sizes JSONB DEFAULT '[]'`,
     ];
     for (const sql of productMigrations) {
       try { await client.query(sql); } catch (_) {}

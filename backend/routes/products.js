@@ -82,7 +82,7 @@ router.get("/:id", async (req, res) => {
 // POST /api/products — ajouter un produit (admin uniquement)
 router.post("/", authMiddleware, upload.single("image"), async (req, res) => {
   try {
-    const { name, price, category, description, stock, is_available, in_promotion, discount_percent, is_new } = req.body;
+    const { name, price, category, description, stock, is_available, in_promotion, discount_percent, is_new, colors, sizes } = req.body;
 
     if (!name || !price) {
       return res.status(400).json({ error: "Nom et prix sont obligatoires." });
@@ -97,11 +97,13 @@ router.post("/", authMiddleware, upload.single("image"), async (req, res) => {
     const inPromo = in_promotion === "true" || in_promotion === true ? true : false;
     const discountPct = parseInt(discount_percent) || 0;
     const isNew = is_new === "true" || is_new === true ? true : false;
+    const colorsVal = colors ? (typeof colors === "string" ? JSON.parse(colors) : colors) : [];
+    const sizesVal = sizes ? (typeof sizes === "string" ? JSON.parse(sizes) : sizes) : [];
 
     const result = await pool.query(
-      `INSERT INTO products (name, price, image, category, description, stock, is_available, in_promotion, discount_percent, is_new)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-      [name, parseInt(price), imageUrl, category || "Général", description || "", stockVal, isAvail, inPromo, discountPct, isNew]
+      `INSERT INTO products (name, price, image, category, description, stock, is_available, in_promotion, discount_percent, is_new, colors, sizes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+      [name, parseInt(price), imageUrl, category || "Général", description || "", stockVal, isAvail, inPromo, discountPct, isNew, JSON.stringify(colorsVal), JSON.stringify(sizesVal)]
     );
 
     res.status(201).json(result.rows[0]);
@@ -113,7 +115,7 @@ router.post("/", authMiddleware, upload.single("image"), async (req, res) => {
 // PUT /api/products/:id — modifier un produit (admin uniquement)
 router.put("/:id", authMiddleware, upload.single("image"), async (req, res) => {
   try {
-    const { name, price, category, description, stock, imageUrl, is_available, in_promotion, discount_percent, is_new } = req.body;
+    const { name, price, category, description, stock, imageUrl, is_available, in_promotion, discount_percent, is_new, colors, sizes } = req.body;
     const id = req.params.id;
 
     const existing = await pool.query("SELECT * FROM products WHERE id = $1", [id]);
@@ -123,15 +125,18 @@ router.put("/:id", authMiddleware, upload.single("image"), async (req, res) => {
       ? `/uploads/${req.file.filename}`
       : imageUrl || existing.rows[0].image;
 
-    // Gestion is_available (peut venir en string depuis FormData)
     const isAvail = is_available === undefined ? null
       : is_available === "false" || is_available === false ? false : true;
-
     const inPromo = in_promotion === undefined ? null
       : in_promotion === "true" || in_promotion === true ? true : false;
-
     const isNewVal = is_new === undefined ? null
       : is_new === "true" || is_new === true ? true : false;
+    const colorsVal = colors !== undefined
+      ? JSON.stringify(typeof colors === "string" ? JSON.parse(colors) : colors)
+      : null;
+    const sizesVal = sizes !== undefined
+      ? JSON.stringify(typeof sizes === "string" ? JSON.parse(sizes) : sizes)
+      : null;
 
     const result = await pool.query(
       `UPDATE products SET
@@ -144,8 +149,10 @@ router.put("/:id", authMiddleware, upload.single("image"), async (req, res) => {
         is_available = COALESCE($7, is_available),
         in_promotion = COALESCE($8, in_promotion),
         discount_percent = COALESCE($9, discount_percent),
-        is_new = COALESCE($10, is_new)
-       WHERE id = $11 RETURNING *`,
+        is_new = COALESCE($10, is_new),
+        colors = COALESCE($11::jsonb, colors),
+        sizes = COALESCE($12::jsonb, sizes)
+       WHERE id = $13 RETURNING *`,
       [
         name || null,
         price ? parseInt(price) : null,
@@ -157,6 +164,8 @@ router.put("/:id", authMiddleware, upload.single("image"), async (req, res) => {
         inPromo,
         discount_percent !== undefined ? parseInt(discount_percent) || 0 : null,
         isNewVal,
+        colorsVal,
+        sizesVal,
         id,
       ]
     );

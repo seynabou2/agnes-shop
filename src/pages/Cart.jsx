@@ -112,7 +112,7 @@ function Cart() {
       customer_phone: phone,
       customer_address: address,
       customer_email: email || customer?.email || null,
-      items: cart.map((i) => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
+      items: cart.map((i) => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, color: i.selectedColor || null, size: i.selectedSize || null })),
       payment_method: paymentMethod,
       payment_ref: paymentRef || null,
       ...extraFields,
@@ -379,16 +379,31 @@ function Cart() {
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: "700", fontSize: "0.92rem" }}>{item.name}</div>
                       <div style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>{item.price.toLocaleString()} FCFA / unité</div>
+                      {(item.selectedColor || item.selectedSize) && (
+                        <div style={{ display: "flex", gap: "0.4rem", marginTop: "3px", flexWrap: "wrap" }}>
+                          {item.selectedColor && (
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "#F3F4F6", borderRadius: "999px", padding: "1px 8px", fontWeight: "600" }}>
+                              {item.selectedColorHex && <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: item.selectedColorHex, display: "inline-block", border: "1px solid rgba(0,0,0,0.1)" }} />}
+                              {item.selectedColor}
+                            </span>
+                          )}
+                          {item.selectedSize && (
+                            <span style={{ fontSize: "0.75rem", background: "#F3F4F6", borderRadius: "999px", padding: "1px 8px", fontWeight: "600" }}>
+                              Taille {item.selectedSize}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                      <button onClick={() => removeFromCart(item.id)} style={{ width: "28px", height: "28px", borderRadius: "50%", border: "1.5px solid #E5E7EB", background: "white", cursor: "pointer", fontWeight: "700", fontSize: "1rem" }}>–</button>
+                      <button onClick={() => removeFromCart(item.cartKey)} style={{ width: "28px", height: "28px", borderRadius: "50%", border: "1.5px solid #E5E7EB", background: "white", cursor: "pointer", fontWeight: "700", fontSize: "1rem" }}>–</button>
                       <span style={{ fontWeight: "700", minWidth: "22px", textAlign: "center" }}>{item.quantity}</span>
                       <button onClick={() => addToCart(item)} style={{ width: "28px", height: "28px", borderRadius: "50%", border: "none", background: "var(--primary)", color: "white", cursor: "pointer", fontWeight: "700", fontSize: "1rem" }}>+</button>
                     </div>
                     <div style={{ fontWeight: "800", color: "var(--rose)", minWidth: "90px", textAlign: "right", fontSize: "0.95rem" }}>
                       {(item.price * item.quantity).toLocaleString()} FCFA
                     </div>
-                    <button onClick={() => deleteFromCart(item.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#D1D5DB", fontSize: "1.2rem", padding: "4px" }} title="Supprimer">✕</button>
+                    <button onClick={() => deleteFromCart(item.cartKey)} style={{ background: "none", border: "none", cursor: "pointer", color: "#D1D5DB", fontSize: "1.2rem", padding: "4px" }} title="Supprimer">✕</button>
                   </div>
                 ))}
                 {unavailableItems.length > 0 && (

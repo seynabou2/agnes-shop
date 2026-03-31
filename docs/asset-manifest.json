@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/agnes-shop/static/css/main.2a5d3745.css",
-    "main.js": "/agnes-shop/static/js/main.9a41f1f0.js",
+    "main.css": "/agnes-shop/static/css/main.1ffad045.css",
+    "main.js": "/agnes-shop/static/js/main.920cceb2.js",
     "index.html": "/agnes-shop/index.html",
-    "main.2a5d3745.css.map": "/agnes-shop/static/css/main.2a5d3745.css.map",
-    "main.9a41f1f0.js.map": "/agnes-shop/static/js/main.9a41f1f0.js.map"
+    "main.1ffad045.css.map": "/agnes-shop/static/css/main.1ffad045.css.map",
+    "main.920cceb2.js.map": "/agnes-shop/static/js/main.920cceb2.js.map"
   },
   "entrypoints": [
-    "static/css/main.2a5d3745.css",
-    "static/js/main.9a41f1f0.js"
+    "static/css/main.1ffad045.css",
+    "static/js/main.920cceb2.js"
   ]
 }

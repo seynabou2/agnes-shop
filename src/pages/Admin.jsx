@@ -214,12 +214,35 @@ function Dashboard({ stats, orders, onValidatePayment }) {
 
 /* ─────────────── PRODUITS ─────────────── */
 function Products({ products, reload }) {
-  const [form, setForm] = useState({ name: "", price: "", category: "", description: "", stock: "", in_promotion: false, discount_percent: "", is_new: false });
+  const EMPTY_FORM = { name: "", price: "", category: "", description: "", stock: "", in_promotion: false, discount_percent: "", is_new: false, colors: [], sizes: [] };
+  const [form, setForm] = useState(EMPTY_FORM);
   const [imageFile, setImageFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [err, setErr] = useState("");
   const [ok, setOk] = useState("");
-  const [editingPromo, setEditingPromo] = useState({}); // { [id]: discountValue }
+  const [editingPromo, setEditingPromo] = useState({});
+  const [newColorName, setNewColorName] = useState("");
+  const [newColorHex, setNewColorHex] = useState("#E11D48");
+
+  const COMMON_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "Unique", "36", "38", "40", "42", "44", "46"];
+
+  function addColor() {
+    if (!newColorName.trim()) return;
+    setForm((f) => ({ ...f, colors: [...f.colors, { name: newColorName.trim(), hex: newColorHex }] }));
+    setNewColorName("");
+    setNewColorHex("#E11D48");
+  }
+
+  function removeColor(i) {
+    setForm((f) => ({ ...f, colors: f.colors.filter((_, j) => j !== i) }));
+  }
+
+  function toggleSize(s) {
+    setForm((f) => ({
+      ...f,
+      sizes: f.sizes.includes(s) ? f.sizes.filter((x) => x !== s) : [...f.sizes, s],
+    }));
+  } // { [id]: discountValue }
 
   function handleImg(e) {
     const f = e.target.files[0];
@@ -235,14 +258,17 @@ function Products({ products, reload }) {
       let payload;
       if (imageFile) {
         payload = new FormData();
-        Object.entries(form).forEach(([k, v]) => payload.append(k, v));
+        Object.entries(form).forEach(([k, v]) => {
+          if (k === "colors" || k === "sizes") payload.append(k, JSON.stringify(v));
+          else payload.append(k, v);
+        });
         payload.append("image", imageFile);
       } else {
-        payload = { ...form };
+        payload = { ...form, colors: form.colors, sizes: form.sizes };
       }
       await addProduct(payload);
-      setForm({ name: "", price: "", category: "", description: "", stock: "", in_promotion: false, discount_percent: "", is_new: false });
-      setImageFile(null); setPreview(null);
+      setForm(EMPTY_FORM);
+      setImageFile(null); setPreview(null); setNewColorName(""); setNewColorHex("#E11D48");
       setOk("Produit ajouté !");
       reload();
     } catch (e) { setErr(e.message); }
@@ -345,6 +371,68 @@ function Products({ products, reload }) {
             <input type="file" accept="image/*" onChange={handleImg} style={{ fontSize: "0.87rem" }} />
             {preview && <img src={preview} alt="preview" style={{ width: "70px", height: "70px", objectFit: "cover", borderRadius: "8px", marginTop: "0.5rem" }} />}
           </div>
+
+          {/* ── Couleurs ── */}
+          <div className="form-group" style={{ marginBottom: "0.75rem" }}>
+            <label className="form-label">🎨 Couleurs disponibles <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, color: "var(--text-muted)" }}>(optionnel)</span></label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginBottom: "0.5rem" }}>
+              {form.colors.map((c, i) => (
+                <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "#F3F4F6", borderRadius: "999px", padding: "4px 10px", fontSize: "0.82rem", fontWeight: "600" }}>
+                  <span style={{ width: "14px", height: "14px", borderRadius: "50%", background: c.hex, display: "inline-block", border: "1px solid rgba(0,0,0,0.15)", flexShrink: 0 }} />
+                  {c.name}
+                  <button type="button" onClick={() => removeColor(i)} style={{ background: "none", border: "none", cursor: "pointer", color: "#9CA3AF", fontSize: "1rem", lineHeight: 1, padding: "0 0 0 2px" }}>×</button>
+                </span>
+              ))}
+              {form.colors.length === 0 && <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Aucune couleur ajoutée</span>}
+            </div>
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+              <input
+                className="form-input"
+                placeholder="Nom de la couleur (ex: Rouge)"
+                value={newColorName}
+                onChange={(e) => setNewColorName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addColor())}
+                style={{ flex: 1, minWidth: "140px" }}
+              />
+              <input
+                type="color"
+                value={newColorHex}
+                onChange={(e) => setNewColorHex(e.target.value)}
+                style={{ width: "44px", height: "38px", padding: "2px", border: "1.5px solid var(--border)", borderRadius: "6px", cursor: "pointer" }}
+                title="Choisir la couleur"
+              />
+              <button type="button" className="btn btn-outline btn-sm" onClick={addColor}>+ Ajouter</button>
+            </div>
+          </div>
+
+          {/* ── Tailles ── */}
+          <div className="form-group" style={{ marginBottom: "1rem" }}>
+            <label className="form-label">📏 Tailles disponibles <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, color: "var(--text-muted)" }}>(optionnel)</span></label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+              {COMMON_SIZES.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => toggleSize(s)}
+                  style={{
+                    padding: "4px 12px", borderRadius: "6px", fontSize: "0.82rem", fontWeight: "700", cursor: "pointer",
+                    border: `1.5px solid ${form.sizes.includes(s) ? "var(--primary)" : "#E5E7EB"}`,
+                    background: form.sizes.includes(s) ? "var(--primary)" : "white",
+                    color: form.sizes.includes(s) ? "white" : "#374151",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            {form.sizes.length > 0 && (
+              <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "0.3rem" }}>
+                Sélectionnées : {form.sizes.join(", ")}
+              </p>
+            )}
+          </div>
+
           {err && <div className="alert alert-error" style={{ marginBottom: "0.75rem", fontSize: "0.87rem" }}>⚠️ {err}</div>}
           {ok && <div className="alert alert-success" style={{ marginBottom: "0.75rem", fontSize: "0.87rem" }}>✅ {ok}</div>}
           <button className="btn btn-accent" type="submit">Ajouter le produit</button>
